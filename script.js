@@ -153,7 +153,54 @@ class Order{
     Ui.paymentSummary(this);
    }
 
-   closeSale() {}
+   exportOrder(date){
+    this.order.forEach(orderLine => {
+        let currentLine = [];
+        currentLine[0] = date;
+        currentLine[1] = this.invoiceNumber;
+        currentLine[2] = orderLine.sku;
+        currentLine[3] = orderLine.quantity;
+        currentLine[4] = orderLine.price;
+        currentLine[5] = orderLine.tax;
+
+        previousSalesData.push(currentLine);
+    })
+
+    this.previousSalesData = previousSalesData;
+   }
+
+   exportPayment(date){
+   const currentPayment = [];
+   const tipChange = Utilities.roundToTwo(this.payment.amountPaid - this.getSummary().grandtotal);
+
+   currentPayment[0] = date;
+   currentPayment[1] = this.invoiceNumber;
+   currentPayment[2] = this.getSummary().grandtotal;
+   currentPayment[3] = this.payment.type;
+
+   if(this.payment.type == "cash"){
+    currentPayment[4] = 0;
+   }
+   else{
+    currentPayment[4] = tipChange;
+   }
+   paymentsData.push(currentPayment);
+  
+
+   }
+
+   closeSale() {
+   const date = new Date();
+   this.exportOrder(date);
+   this.exportPayment(date);
+   this.previousSales = previousSalesData;
+
+   Ui.hidePaypad(this);
+   this.clearPayment();
+   this.clearOrder();
+   Ui.invoiceNumber(this);
+
+   }
 }
 
 class Ui {
@@ -314,7 +361,16 @@ class Utilities{
         }
     }
 
-    static backPaypad(orderInstance) {}
+    static backPaypad(orderInstance) {
+        const currentPayment = orderInstance.payment.amountPaid;
+
+        if(currentPayment > 0){
+            const toSubtract = ((currentPayment * 100) % 10) * 0.01;
+            const newAmount = ((currentPayment - toSubtract) * 0.1);
+            orderInstance.changePayment({ amountPaid : newAmount});
+
+        }
+    }
 
     static clearPaypad(orderInstance) {
         orderInstance.changePayment({ amountPaid: 0 });
